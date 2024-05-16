@@ -1,0 +1,148 @@
+// Note : If other computer cannot access the xampp localhost tyrn off the firewall of acceptor xampp laptop.
+
+
+#include <ESP8266WiFi.h>
+#include <ESP8266HTTPClient.h>
+
+    #define LED     D0        // Led in NodeMCU at pin GPIO16 (D0)
+     
+    const char* ssid     = "Dera66";
+    const char* password = "talktoeachother";     
+
+    int wifiStatus;
+     
+    void setup() {
+      
+      Serial.begin(115200); // Serial Monitor should also have same baud rate matching. Baud rate= number of bits per second.
+      delay(200);
+      
+     
+     pinMode(LED,OUTPUT);
+     
+      // We start by connecting to a WiFi network
+   
+      Serial.print("Your are connecting to;");
+      Serial.println(ssid);
+
+  //making a static ip of esp
+  //Static IP address configuration
+  IPAddress staticIP(192, 168, 1, 50); //ESP static ip
+  IPAddress gateway(192, 168, 1, 1);   //IP Address of your WiFi Router (Gateway)
+  IPAddress subnet(255, 255, 255, 0);  //Subnet mask
+  IPAddress dns(8, 8, 8, 8);  //DNS
+  
+  WiFi.config(staticIP, subnet, gateway, dns);
+      
+      WiFi.begin(ssid, password);
+      
+      while (WiFi.status() != WL_CONNECTED) {
+        delay(500); //.5second delsy
+        Serial.print(".");
+      }
+     
+ }   
+     
+void loop() {
+      WiFiClient client;
+      wifiStatus = WiFi.status();
+
+      if(wifiStatus == WL_CONNECTED){
+         Serial.println("");
+         Serial.println("Your ESP is connected!");  
+         Serial.println("Your IP address is: ");
+         Serial.println(WiFi.localIP()); 
+         
+         HTTPClient http;    //Declare object of class HTTPClient
+      
+         http.begin("http://192.168.1.9/ResponseFile.php");      //Specify request destination
+         http.addHeader("Content-Type", "application/x-www-form-urlencoded");  //Specify content-type header
+      
+         int httpCode = http.POST("temp=20&light=88");   //Send the request
+         String payload = http.getString();                  //Get the response payload
+      
+         Serial.println(httpCode);   //Print HTTP return code
+         Serial.println(payload);    //Print request response payload
+
+         if(payload.toInt()== 0)
+         {
+          Serial.println("Light to on");
+          digitalWrite(LED,HIGH);
+          }
+         else{
+          Serial.println("Light to off");
+          digitalWrite(LED,LOW);
+          }
+      
+         http.end();  //Close connection
+    
+ 
+
+        
+          
+      }
+      else{
+        Serial.println("");
+        Serial.println("WiFi not connected");
+      }
+      delay(1000); // check for connection every once a second
+}
+
+------------------------------------------------------------
+
+<?php
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "mydatabase";
+
+// Create connection
+$conn = new mysqli($servername, $username, $password, $dbname);
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+} 
+
+$sql = "UPDATE rooms SET light='1' WHERE id=1";
+
+if ($conn->query($sql) === TRUE) {
+    echo "Record updated successfully";
+} else {
+    echo "Error updating record: " . $conn->error;
+}
+
+$conn->close();
+?>
+
+
+
+---ResponseFile.php---
+
+<?php
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "mydatabase";
+
+// Create connection
+$conn = new mysqli($servername, $username, $password, $dbname);
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+} 
+
+$sql = "SELECT light, fan, ac FROM rooms WHERE id=1";
+$result = $conn->query($sql);
+
+if ($result->num_rows > 0) {
+    // output data of each row
+    while($row = $result->fetch_assoc()) {
+        #echo "<br> light: ". $row["light"]. " - fan: ". $row["fan"]. " - ac: ". $row["ac"].  "<br>";
+		#echo "<br> light: ". $row["light"]. "<br>";
+		echo $row["light"] ;
+    }
+} else {
+    echo "0 results";
+}
+
+$conn->close();
+?> 
